@@ -1,57 +1,46 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status, generics
-from .models import Car
-from .serializers import CarSerializer
+from rest_framework import status, generics, viewsets
+from .models import Category, Product
+from .serializers import ParentCategoryModelSerializer, ProductSerializer
 
 # Create your views here.
+ 
+class ParentCategoryListAPIView(ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = ParentCategoryModelSerializer 
+    
+    def get_queryset(self):
+        queryset = Category.objects.filter(parent__isnull = True)
+        return queryset
+    
 
-@api_view(['GET', 'POST'])
-def car_list_create(request):
-    if request.method == 'GET':
-        cars = Car.objects.all()
-        serializer = CarSerializer(cars, many =True)
-        return Response(serializer.data)
+class ChildrenCategoryByCategorySlug(ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = ParentCategoryModelSerializer
+    
+    
+    def get_queryset(self):
+        category_slug = self.kwargs['slug']
+        parent = Category.objects.filter(slug =category_slug).first()
+        if not parent:
+            return Category.objects.none()
+        return parent.children.all()
+    
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
-    if request.method == 'POST':
-        serializer = CarSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-@api_view(['GET', 'PUT', 'DELETE'])
-def car_detail(request, pk):
-    try:
-        car = Car.objects.get(pk=pk)
-    except Car.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method == 'GET':
-        serializer = CarSerializer(car)
-        return Response(serializer.data)
-    
-    if request.method == 'PUT':
-        serializer = CarSerializer(car, data = request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        
-    if request.method == 'DELETE':
-        car.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    
-    
-    
-class CarListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Car.objects.all()
-    serializer_class = CarSerializer
+class ProductListByChildCategorySlug(generics.ListAPIView):
+    serializer_class = ProductSerializer
 
-
-class CarRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Car.objects.all()
-    serializer_class = CarSerializer    
+    def get_queryset(self):
+        slug = self.kwargs['slug']
+        parent_category = Category.objects.filter(slug=slug).first()
+        if not parent_category:
+            return Product.objects.none()
+        child_categories = parent_category.children.all()
+        return Product.objects.filter(category__in=child_categories)

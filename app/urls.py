@@ -1,11 +1,16 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import *
 
+
+router = DefaultRouter()
+router.register(r'apelsin.uz/products', ProductViewSet, basename='product')
+
 urlpatterns = [
-    path('fbv/cars/', car_list_create),
-    path('fbv/cars/<int:pk>/', car_detail),
+    path('apelsin.uz/', ParentCategoryListAPIView.as_view()),
+    path('apelsin.uz/category/<slug:slug>/', ChildrenCategoryByCategorySlug.as_view()),
     
-    
-    path('cbv/cars/', CarListCreateAPIView.as_view()),
-    path('cbv/cars/<int:pk>/', CarRetrieveUpdateDestroyAPIView.as_view()),
+    path('apelsin.uz/products-by-category/<slug:slug>/', ProductListByChildCategorySlug.as_view(), name='products-by-child-category'),
+
+    path('', include(router.urls)),
 ]
