@@ -5,6 +5,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status, generics, viewsets
 from .models import Category, Product
+from rest_framework.permissions import IsAuthenticated
+from .permissions import CanUpdateWithin4Hours
 from .serializers import ParentCategoryModelSerializer, ProductSerializer
 
 # Create your views here.
@@ -22,7 +24,7 @@ class ChildrenCategoryByCategorySlug(ListAPIView):
     queryset = Category.objects.all()
     serializer_class = ParentCategoryModelSerializer
     
-    
+        
     def get_queryset(self):
         category_slug = self.kwargs['slug']
         parent = Category.objects.filter(slug =category_slug).first()
@@ -33,6 +35,7 @@ class ChildrenCategoryByCategorySlug(ListAPIView):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated, CanUpdateWithin4Hours]
 
 class ProductListByChildCategorySlug(generics.ListAPIView):
     serializer_class = ProductSerializer
@@ -44,3 +47,6 @@ class ProductListByChildCategorySlug(generics.ListAPIView):
             return Product.objects.none()
         child_categories = parent_category.children.all()
         return Product.objects.filter(category__in=child_categories)
+    
+    
+    
