@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status, generics, viewsets
 from .models import Category, Product
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from .permissions import CanUpdateWithin4Hours
 from .serializers import ParentCategoryModelSerializer, ProductSerializer
 
@@ -35,6 +36,7 @@ class ChildrenCategoryByCategorySlug(ListAPIView):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, CanUpdateWithin4Hours]
 
 class ProductListByChildCategorySlug(generics.ListAPIView):
